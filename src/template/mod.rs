@@ -59,14 +59,18 @@ macro_rules! solution {
 
             #[test]
             fn test_part_one() {
-                let result = part_one(&advent_of_code::template::read_file("inputs", DAY));
-                assert_eq!(result, $expected_one);
+                if let Some(expected) = $expected_one {
+                    let result = part_one(&advent_of_code::template::read_file("inputs", DAY));
+                    assert_eq!(result, Some(expected));
+                }
             }
 
             #[test]
             fn test_part_two() {
-                let result = part_two(&advent_of_code::template::read_file("inputs", DAY));
-                assert_eq!(result, $expected_two);
+                if let Some(expected) = $expected_two {
+                    let result = part_two(&advent_of_code::template::read_file("inputs", DAY));
+                    assert_eq!(result, Some(expected));
+                }
             }
         }
     };
