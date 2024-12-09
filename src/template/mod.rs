@@ -42,16 +42,36 @@ pub fn read_file_part(folder: &str, day: Day, part: u8) -> String {
 #[macro_export]
 macro_rules! solution {
     ($day:expr) => {
-        $crate::solution!(@impl $day, [part_one, 1] [part_two, 2]);
+        $crate::solution!(@impl $day, [part_one, 1, None] [part_two, 2, None]);
     };
     ($day:expr, 1) => {
-        $crate::solution!(@impl $day, [part_one, 1]);
+        $crate::solution!(@impl $day, [part_one, 1, None]);
     };
     ($day:expr, 2) => {
-        $crate::solution!(@impl $day, [part_two, 2]);
+        $crate::solution!(@impl $day, [part_two, 2, None]);
+    };
+    ($day:expr, $expected_one:expr, $expected_two:expr) => {
+        $crate::solution!(@impl $day, [part_one, 1, $expected_one] [part_two, 2, $expected_two]);
+
+        #[cfg(test)]
+        mod solution_tests {
+            use super::*;
+
+            #[test]
+            fn test_part_one() {
+                let result = part_one(&advent_of_code::template::read_file("inputs", DAY));
+                assert_eq!(result, $expected_one);
+            }
+
+            #[test]
+            fn test_part_two() {
+                let result = part_two(&advent_of_code::template::read_file("inputs", DAY));
+                assert_eq!(result, $expected_two);
+            }
+        }
     };
 
-    (@impl $day:expr, $( [$func:expr, $part:expr] )*) => {
+    (@impl $day:expr, $( [$func:expr, $part:expr, $expect:expr] )*) => {
         /// The current day.
         const DAY: $crate::template::Day = $crate::day!($day);
 
@@ -62,7 +82,7 @@ macro_rules! solution {
         fn main() {
             use $crate::template::runner::*;
             let input = $crate::template::read_file("inputs", DAY);
-            $( run_part($func, &input, DAY, $part); )*
+            $( run_part($func, &input, DAY, $part, $expect); )*
         }
     };
 }

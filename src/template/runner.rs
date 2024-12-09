@@ -9,15 +9,27 @@ use std::{cmp, env, process};
 use crate::template::ANSI_BOLD;
 use crate::template::{aoc_cli, Day, ANSI_ITALIC, ANSI_RESET};
 
-pub fn run_part<I: Clone, T: Display>(func: impl Fn(I) -> Option<T>, input: I, day: Day, part: u8) {
+pub fn run_part<I: Clone, T: Display + PartialEq>(
+    func: impl Fn(I) -> Option<T>,
+    input: I,
+    day: Day,
+    part: u8,
+    expect: Option<T>,
+) {
     let part_str = format!("Part {part}");
 
-    let (result, duration, samples) =
-        run_timed(func, input, |result| print_result(result, &part_str, ""));
+    let (result, duration, samples) = run_timed(func, input, |result| {
+        print_result(result, &part_str, "", &expect)
+    });
 
-    print_result(&result, &part_str, &format_duration(&duration, samples));
+    print_result(
+        &result,
+        &part_str,
+        &format_duration(&duration, samples),
+        &expect,
+    );
 
-    if let Some(result) = result {
+    if let Some(result) = &result {
         submit_result(result, day, part);
     }
 }
@@ -94,8 +106,22 @@ fn format_duration(duration: &Duration, samples: u128) -> String {
     }
 }
 
-fn print_result<T: Display>(result: &Option<T>, part: &str, duration_str: &str) {
+fn print_result<T: Display + PartialEq>(
+    result: &Option<T>,
+    part: &str,
+    duration_str: &str,
+    expect: &Option<T>,
+) {
     let is_intermediate_result = duration_str.is_empty();
+    let match_str = if expect.is_some() {
+        if result == expect {
+            "✅".to_string()
+        } else {
+            format!("❌ (expected {})", expect.as_ref().unwrap())
+        }
+    } else {
+        "".to_string()
+    };
 
     match result {
         Some(result) => {
@@ -106,7 +132,7 @@ fn print_result<T: Display>(result: &Option<T>, part: &str, duration_str: &str) 
                 } else {
                     print!("\r");
                     println!("{str}");
-                    println!("{result}");
+                    println!("{result} {match_str}");
                 }
             } else {
                 let str = format!("{part}: {ANSI_BOLD}{result}{ANSI_RESET}{duration_str}");
@@ -114,7 +140,7 @@ fn print_result<T: Display>(result: &Option<T>, part: &str, duration_str: &str) 
                     print!("{str}");
                 } else {
                     print!("\r");
-                    println!("{str}");
+                    println!("{str} {match_str}");
                 }
             }
         }
