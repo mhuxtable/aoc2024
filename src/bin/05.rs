@@ -1,87 +1,85 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    cmp,
+    collections::HashSet,
+};
 
-advent_of_code::solution!(5, Some(5452), None);
+advent_of_code::solution!(5, Some(5452), Some(4598));
 
-struct Rule(usize, usize);
+fn parse(
+    input: &str,
+) -> (
+    HashSet<(usize, usize)>,
+    impl Iterator<Item = Vec<usize>> + '_,
+) {
+    let (rules, pages) = input.split_once("\n\n").unwrap();
 
-fn parse(input: &str) -> (Vec<Rule>, Vec<Vec<usize>>) {
-    let rules: Vec<Rule> = input
+    let rules: HashSet<(usize, usize)> = rules
         .lines()
-        .clone()
-        .take_while(|line| !line.is_empty())
         .map(|line| {
             let (before, after) = line.split_once('|').unwrap();
-            let (before, after) = (before.parse().unwrap(), after.parse().unwrap());
-
-            Rule(before, after)
+            (before.parse().unwrap(), after.parse().unwrap())
         })
         .collect();
 
-    let pages: Vec<Vec<usize>> = input
+    let pages = pages
         .lines()
-        .skip(rules.len() + 1)
-        .map(|line| line.split(',').map(|page| page.parse().unwrap()).collect())
-        .collect();
+        .map(|line| line.split(',').map(|page| page.parse().unwrap()).collect());
 
     (rules, pages)
 }
 
-fn filter_valid_order(seen: &mut HashSet<usize>, rules_map: &HashMap<usize, HashSet<usize>>, manual: &[usize]) -> bool {
-    seen.clear();
-
-    for page in manual {
-        if let Some(set) = rules_map.get(page) {
-            if !set.is_disjoint(seen) {
-                return false;
-            }
-        }
-
-        seen.insert(*page);
+fn compare_rules(rules: &HashSet<(usize, usize)>, a: &usize, b: &usize) -> cmp::Ordering {
+    if rules.contains(&(*a, *b)) {
+        cmp::Ordering::Less
+    } else if rules.contains(&(*b, *a)) {
+        cmp::Ordering::Greater
+    } else {
+        cmp::Ordering::Equal
     }
-
-    true
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
     let (rules, manuals) = parse(input);
 
-    let mut rules_map = HashMap::new();
-    let mut all_pages = HashSet::new();
-
-    for rule in rules {
-        rules_map
-            .entry(rule.0)
-            .or_insert_with(HashSet::new)
-            .insert(rule.1);
-        all_pages.extend([rule.0, rule.1]);
-    }
-
-    let mut seen = HashSet::with_capacity(all_pages.len());
-
     manuals
-        .iter()
-        .filter(|&manual| {
-            seen.clear();
-
-            for page in manual {
-                if let Some(set) = rules_map.get(page) {
-                    if !set.is_disjoint(&seen) {
-                        return false;
-                    }
-                }
-
-                seen.insert(*page);
+        .filter_map(|manual| {
+            if manual.is_sorted_by(|a, b| compare_rules(&rules, a, b).is_le()) {
+                Some(manual[manual.len() / 2])
+            } else {
+                None
             }
-
-            true
         })
-        .map(|manual| manual[manual.len() / 2])
         .sum::<usize>()
         .into()
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let (rules, manuals) = parse(input);
+
+    manuals
+        .into_iter()
+        .filter_map(|mut manual| {
+            if !manual.is_sorted_by(|a, b| compare_rules(&rules, a, b).is_le()) {
+                manual.sort_unstable_by(|a, b| compare_rules(&rules, a, b));
+                Some(manual[manual.len() / 2])
+            } else {
+                None
+            }
+
+            //let mut did_swap = false;
+            //for i in (0..manual.len() - 1).rev() {
+            //    for j in i..manual.len() - 1 {
+            //        if rules.contains(&(manual[j + 1], manual[j])) {
+            //            manual.swap(j, j + 1);
+            //            did_swap = true;
+            //        }
+            //    }
+            //}
+
+            //did_swap.then_some(manual[manual.len() / 2])
+        })
+        .sum::<usize>()
+        .into()
 }
 
 #[cfg(test)]
@@ -97,6 +95,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(123));
     }
 }
