@@ -30,3 +30,4 @@ tinyjson = "2.5.1"
 # Solution dependencies
 bitflags = "2.6.0"
 grid = "0.15.0"
+itertools = "0.13.0"
